@@ -100,6 +100,59 @@ contract GitVerseNFT is ERC1155, Ownable, Pausable, ERC1155Supply {
         return tokenURI;
     }
 
+    event AddPkg(uint256 tokenId);
+
+    function addPkg(
+        uint256 basicPrice,
+        uint256 inviteCommission,
+        string memory metadataCID
+    ) public payable whenNotPaused {
+        require(bytes(metadataCID).length > 0, "metadataCID is empty");
+        require(
+            inviteCommission <= 1000,
+            "inviteCommission must smaller than 10%"
+        );
+        require(
+            msg.value >= createTokenPrice,
+            "insufficient funds for createToken"
+        );
+
+        address createdBy = _msgSender();
+
+        uint256 tokenId = tokenIdCounter.current();
+        tokenIdCounter.increment();
+
+        tokenURIMap[tokenId] = metadataCID;
+        tokenOwnerMap[tokenId] = createdBy;
+        basicPriceMap[tokenId] = basicPrice;
+        inviteCommissionMap[tokenId] = inviteCommission;
+        tokenOwnByMap[createdBy].push(tokenId);
+
+        emit AddPkg(tokenId);
+    }
+
+    function updatePkg(
+        uint256 tokenId,
+        uint256 basicPrice,
+        uint256 inviteCommission,
+        string memory metadataCID
+    ) public whenNotPaused {
+        address createdBy = _msgSender();
+        require(
+            tokenOwnerMap[tokenId] == createdBy,
+            "you are not the token creator"
+        );
+        require(bytes(metadataCID).length > 0, "metadataCID is empty");
+        require(
+            inviteCommission <= 1000,
+            "inviteCommission must smaller than 10%"
+        );
+
+        tokenURIMap[tokenId] = metadataCID;
+        basicPriceMap[tokenId] = basicPrice;
+        inviteCommissionMap[tokenId] = inviteCommission;
+    }
+
     // 新建项目，提交名字、描述、logo、及CID, 依赖的 tokenId，版本号
     event CreateToken(
         uint256 indexed tokenId,
